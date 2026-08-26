@@ -17,10 +17,41 @@
 */
 
 #include <iostream>
+#include <sstream>
+#include <string>
+
+#include "alps/fits.h"
+
+using namespace ALPS;
 
 int main()
 {
     std::cout << "AlpX Copyright (C) 2026 Stefano De Angelis" << '\n';
+
+    std::string cmd;
+    std::string token;
+    while (std::getline(std::cin, cmd))
+    {
+        token.clear();
+        std::istringstream iss(cmd);
+        iss >> token;
+
+        if (token == "quit" || token == "exit") { break; }
+
+        if (token == "header")
+        {
+            Path path;
+
+            if (!(iss >> path)) { std::cerr << "Could not parse path"; }
+
+            FITS::Header header = FITS::parse_header(path);
+
+            for (FITS::Card card : header)
+            {
+                std::cout << card.keyword << " = " << card.value << '\n';
+            }
+        }
+    }
 
     return 0;
 }
