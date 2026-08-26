@@ -19,12 +19,27 @@
 #ifndef ALPS_TYPES_H
 #define ALPS_TYPES_H
 
+#include <filesystem>
 #include <vector>
 
 namespace ALPS
 {
 
 using Pixels = std::vector<float>;
+
+using Path = std::filesystem::path;
+
+constexpr bool trim(std::string& string)
+{
+  std::size_t first = string.find_first_not_of(' ');
+  std::size_t last = string.find_last_not_of(' ');
+
+  if (first == std::string::npos) { return false; }
+
+  string = string.substr(first, last - first + 1);
+
+  return true;
+}
 
 } // namespace ALPS
 

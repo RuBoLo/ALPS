@@ -2,9 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(ALPS VERSION 0.0.0 LANGUAGES CXX)
 
-add_library(alps STATIC
-    src/image.cpp
-)
+add_library(alps STATIC)
 
 target_include_directories(alps
     PUBLIC
@@ -22,4 +20,5 @@ target_compile_options(alps PRIVATE
     -O3
 )
 
+add_subdirectory(src)
 add_subdirectory(cli)
