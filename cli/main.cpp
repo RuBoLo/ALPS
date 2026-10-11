@@ -16,6 +16,7 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <chrono>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -38,18 +39,29 @@ int main()
 
         if (token == "quit" || token == "exit") { break; }
 
-        if (token == "header")
+        else if (token == "header")
         {
             Path path;
 
             if (!(iss >> path)) { std::cerr << "Could not parse path"; }
 
+            auto start = std::chrono::steady_clock::now();
             FITS::Header header = FITS::parse_header(path);
+            auto end = std::chrono::steady_clock::now();
 
-            for (FITS::Card card : header)
+            float elapsed = static_cast<float>(std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / 1000000.0f);
+
+            for (FITS::Card card : header.data)
             {
                 std::cout << card.keyword << " = " << card.value << '\n';
             }
+
+            std::cout << "\nParsed FITS header in " << elapsed << " ms\n";
+        }
+
+        else
+        {
+            std::cout << "\033[31mUnrecognized command \'" << cmd << "\'.\033[0m\n\n";
         }
     }
 
