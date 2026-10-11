@@ -56,7 +56,7 @@ namespace FITS
 
             std::string value(card + 10);
 
-            header.emplace_back(keyword, value, "");
+            header.data.emplace_back(keyword, value, "");
         }
 
         return header;

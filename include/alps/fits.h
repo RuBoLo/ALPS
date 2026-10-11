@@ -47,7 +47,13 @@ public:
     std::string comment;
 };
 
-using Header = std::vector<Card>;
+class Header
+{
+public:
+
+    std::vector<Card> data;
+
+};
 
 Header parse_header(const Path& path);
 
