@@ -19,6 +19,7 @@
 #ifndef ALPS_FITS_H
 #define ALPS_FITS_H
 
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -55,6 +56,23 @@ public:
 
 };
 
+class Fits
+{
+    [[nodiscard]] Header header() const noexcept { return _header; }
+    [[nodiscard]] Pixels data() const noexcept { return _data; }
+    [[nodiscard]] std::size_t width() const noexcept { return _width; }
+    [[nodiscard]] std::size_t height() const noexcept { return _height; }
+    [[nodiscard]] std::size_t channels() const noexcept { return _channels; }
+
+private:
+    Header _header;
+    Pixels _data;
+    std::size_t _width;
+    std::size_t _height;
+    std::size_t _channels;
+};
+
+Header parse_header(std::ifstream& file);
 Header parse_header(const Path& path);
 
 } // namespace FITS

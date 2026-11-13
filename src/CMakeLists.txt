@@ -1,6 +1,4 @@
 target_sources(alps
     PRIVATE
-        image.cpp
+        fits.cpp
 )
-
-add_subdirectory(formats)

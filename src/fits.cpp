@@ -18,8 +18,6 @@
 
 #include "alps/fits.h"
 
-#include <fstream>
-
 #include "alps/types.h"
 
 namespace ALPS
@@ -28,16 +26,16 @@ namespace ALPS
 namespace FITS
 {
 
-    Header parse_header(const Path& path)
+    Header parse_header(std::ifstream& file)
     {
-        std::ifstream file(path, std::ios::binary);
-
         if (!file)
         {
             throw;
         }
 
         Header header;
+
+        std::size_t header_bytes = 0;
 
         while (true)
         {
@@ -56,10 +54,21 @@ namespace FITS
 
             std::string value(card + 10);
 
+            header_bytes += card_size;
+
             header.data.emplace_back(keyword, value, "");
         }
 
+        std::size_t padding = (block_size - (header_bytes % block_size)) % block_size;
+        file.seekg(static_cast<std::streamoff>(padding), std::ios::cur);
+
         return header;
+    }
+
+    Header parse_header(const Path& path)
+    {
+        std::ifstream file(path, std::ios::binary);
+        return parse_header(file);
     }
 
 } // namespace FITS
