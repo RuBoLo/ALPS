@@ -9,6 +9,8 @@ target_include_directories(alps
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 target_compile_features(alps PRIVATE
     cxx_std_20
 )
@@ -18,6 +20,12 @@ target_compile_options(alps PRIVATE
     -Wextra
     -Wpedantic
     -O3
+)
+
+find_library(CFITSIO_LIBRARY cfitsio REQUIRED)
+
+target_link_libraries(alps PRIVATE
+    ${CFITSIO_LIBRARY}
 )
 
 add_subdirectory(src)

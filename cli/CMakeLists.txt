@@ -1,5 +1,6 @@
 add_executable(alpx
     main.cpp
+    engine.cpp
 )
 
 target_link_libraries(alpx

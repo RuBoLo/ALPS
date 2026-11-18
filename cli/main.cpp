@@ -17,17 +17,22 @@
 */
 
 #include <chrono>
+#include <exception>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
 
 #include "alps/fits.h"
+#include "engine.h"
 
 using namespace ALPS;
 
 int main()
 {
     std::cout << "AlpX Copyright (C) 2026 Stefano De Angelis" << '\n';
+
+    Engine engine = {};
 
     std::string cmd;
     std::string token;
@@ -39,29 +44,109 @@ int main()
 
         if (token == "quit" || token == "exit") { break; }
 
-        else if (token == "header")
+        else if (token == "open")
         {
             Path path;
 
-            if (!(iss >> path)) { std::cerr << "Could not parse path"; }
-
-            auto start = std::chrono::steady_clock::now();
-            FITS::Header header = FITS::parse_header(path);
-            auto end = std::chrono::steady_clock::now();
-
-            float elapsed = static_cast<float>(std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / 1000000.0f);
-
-            for (FITS::Card card : header.data)
+            if (!(iss >> path))
             {
-                std::cout << card.keyword << " = " << card.value << '\n';
+                std::cerr << "\033[38;5;208mUsage: open <path>\033[0m\n";
+                continue;
             }
 
-            std::cout << "\nParsed FITS header in " << elapsed << " ms\n";
+            try
+            {
+                auto start = std::chrono::steady_clock::now();
+                engine.open_fits(path);
+                auto end = std::chrono::steady_clock::now();
+
+                float elapsed = std::chrono::duration<float, std::milli>(end - start).count();
+                std::cout << "\033[32mOpened FITS file in " << elapsed << " ms\033[0m\n";
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << "\033[31mError: " << e.what() << "\033[0m\n";
+            }
+        }
+
+        else if (token == "close")
+        {
+            engine.close_fits();
+        }
+
+        else if (token == "load")
+        {
+            if (iss >> token)
+            {
+                if (token == "header")
+                {
+                    Path path;
+
+                    if (iss >> path)
+                    {
+                        engine.load_header(path);
+                        std::cout << "Loaded header from path\n";
+                    }
+                    else
+                    {
+                        engine.load_header();
+                        std::cout << "Loaded header from opened file\n";
+                    }
+                }
+            }
+        }
+
+        else if (token == "header")
+        {
+            Path path;
+            std::optional<FitsFile> requested_file;
+            FitsFile* fits_file = nullptr;
+
+            if (iss >> path)
+            {
+                requested_file.emplace(path);
+                fits_file = &*requested_file;
+            }
+            else if (engine.has_open_fits())
+            {
+                fits_file = &engine.fits();
+            }
+            else
+            {
+                std::cerr << "\033[31mNo FITS file is currently open: please provide a path!\033[0m\n";
+                continue;
+            }
+
+            auto start = std::chrono::steady_clock::now();
+
+            Header header = parse_header(*fits_file);
+
+            auto end = std::chrono::steady_clock::now();
+
+            float elapsed = std::chrono::duration<float, std::milli>(end - start).count();
+
+            for (const Card& card : header.cards())
+            {
+                std::cout << card.keyword() << " = " << card.value() << '\n';
+            }
+
+            std::cout << "\n\033[32mParsed FITS header in " << elapsed << " ms\033[0m\n";
+        }
+
+        else if (token == "help")
+        {
+            std::cout
+                << "COMMANDS:\n"
+                << "    help                Displays this help message\n"
+                << "    open <path>         Opens a FITS file\n"
+                << "    close               Closes the current file\n"
+                << "    header [path]       Displays the FITS header\n"
+                << "    quit, exit          Exits AlpX\n";
         }
 
         else
         {
-            std::cout << "\033[31mUnrecognized command \'" << cmd << "\'.\033[0m\n\n";
+            std::cout << "\033[31mUnrecognized command \'" << cmd << "\'.\033[0m\n";
         }
     }
 

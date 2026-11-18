@@ -19,8 +19,12 @@
 #ifndef ALPS_FITS_H
 #define ALPS_FITS_H
 
+#include <fitsio.h>
 #include <fstream>
+#include <optional>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "alps/types.h"
@@ -28,54 +32,115 @@
 namespace ALPS
 {
 
-namespace FITS
-{
-
-constexpr std::size_t card_size = 80;
-constexpr std::size_t block_size = 2880;
-
 class Card
 {
 public:
     Card(std::string keyword, std::string value, std::string comment) :
-        keyword(keyword),
-        value(value),
-        comment(comment)
+        _keyword(std::move(keyword)),
+        _value(std::move(value)),
+        _comment(std::move(comment))
     {}
 
-    std::string keyword;
-    std::string value;
-    std::string comment;
+    [[nodiscard]] const std::string& keyword() const noexcept { return _keyword; }
+    [[nodiscard]] const std::string& value() const noexcept { return _value; }
+    [[nodiscard]] const std::string& comment() const noexcept { return _comment; }
+
+private:
+    std::string _keyword;
+    std::string _value;
+    std::string _comment;
 };
 
 class Header
 {
 public:
+    Header() = default;
+    Header(std::vector<Card> cards) : _cards(std::move(cards)) {}
 
-    std::vector<Card> data;
+    [[nodiscard]] const std::vector<Card>& cards() const noexcept { return _cards; }
 
+private:
+    std::vector<Card> _cards;
 };
 
-class Fits
+class Data
 {
-    [[nodiscard]] Header header() const noexcept { return _header; }
     [[nodiscard]] Pixels data() const noexcept { return _data; }
     [[nodiscard]] std::size_t width() const noexcept { return _width; }
     [[nodiscard]] std::size_t height() const noexcept { return _height; }
     [[nodiscard]] std::size_t channels() const noexcept { return _channels; }
 
 private:
-    Header _header;
     Pixels _data;
+
     std::size_t _width;
     std::size_t _height;
     std::size_t _channels;
 };
 
-Header parse_header(std::ifstream& file);
+// CFITSIO wrapper
+
+class FitsFile
+{
+public:
+    explicit FitsFile(const Path& path);
+
+    ~FitsFile();
+
+    FitsFile(const FitsFile&) = delete;
+    FitsFile& operator=(const FitsFile&) = delete;
+
+    FitsFile(FitsFile&& other) noexcept : _fptr(std::exchange(other._fptr, nullptr)) {}
+
+    FitsFile& operator=(FitsFile&& other) noexcept
+    {
+        if (this != &other)
+        {
+            if (_fptr)
+            {
+                int status = 0;
+                fits_close_file(_fptr, &status);
+            }
+
+            _fptr = std::exchange(other._fptr, nullptr);
+        }
+
+        return *this;
+    }
+
+    [[nodiscard]] fitsfile* fptr() const noexcept { return _fptr; }
+
+    [[nodiscard]] const Header& header() const
+    {
+        if (!_header) throw std::runtime_error("No header has been loaded");
+
+        return *_header;
+    }
+
+    [[nodiscard]] const Data& data() const
+    {
+        if (!_data) throw std::runtime_error("No image data has been loaded");
+
+        return *_data;
+    }
+
+    void set_header(Header header)
+    {
+        _header = std::move(header);
+    }
+
+private:
+    fitsfile* _fptr = nullptr;
+
+    std::optional<Header> _header;
+    std::optional<Data> _data;
+};
+
+Header parse_header(const FitsFile& fits_file);
 Header parse_header(const Path& path);
 
-} // namespace FITS
+Data parse_fits(std::ifstream& file);
+Data parse_fits(const Path& path);
 
 } // namespace ALPS
 

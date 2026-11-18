@@ -19,58 +19,76 @@
 #include "alps/fits.h"
 
 #include "alps/types.h"
+#include <fitsio.h>
+#include <longnam.h>
+#include <stdexcept>
 
 namespace ALPS
 {
 
-namespace FITS
-{
-
-    Header parse_header(std::ifstream& file)
+    FitsFile::FitsFile(const Path& path)
     {
-        if (!file)
+        int status = 0;
+
+        fits_open_file(&_fptr, path.string().c_str(), READONLY, &status);
+
+        if (status)
         {
-            throw;
+            char error[FLEN_STATUS] = {};
+            fits_get_errstatus(status, error);
+
+            throw std::runtime_error(std::string("Failed to open FITS file: ") + error);
+        }
+    }
+
+    FitsFile::~FitsFile()
+    {
+        if (_fptr)
+        {
+            int status = 0;
+            fits_close_file(_fptr, &status);
+        }
+    }
+
+    Header parse_header(const FitsFile& fits_file)
+    {
+        fitsfile* fptr = fits_file.fptr();
+
+        int status = 0;
+        int n_keys = 0;
+        int a_keys = 0;
+
+        fits_get_hdrspace(fptr, &n_keys, &a_keys, &status);
+
+        if (status)
+        {
+            throw std::runtime_error("Failed to read FITS header size");
         }
 
-        Header header;
+        std::vector<Card> cards;
 
-        std::size_t header_bytes = 0;
-
-        while (true)
+        for (int i = 1; i <= n_keys; ++i)
         {
-            char card[card_size];
+            char keyword[FLEN_KEYWORD] = {};
+            char value[FLEN_VALUE] = {};
+            char comment[FLEN_COMMENT] = {};
 
-            if (!file.read(card, card_size))
+            fits_read_keyn(fptr, i, keyword, value, comment, &status);
+
+            if (status)
             {
-                throw;
+                throw std::runtime_error("Failed to read FITS header card");
             }
 
-            std::string keyword(card, 8);
-
-            if (!trim(keyword)) { continue; }
-
-            if (keyword == "END") { break; }
-
-            std::string value(card + 10);
-
-            header_bytes += card_size;
-
-            header.data.emplace_back(keyword, value, "");
+            cards.emplace_back(keyword, value, comment);
         }
 
-        std::size_t padding = (block_size - (header_bytes % block_size)) % block_size;
-        file.seekg(static_cast<std::streamoff>(padding), std::ios::cur);
-
-        return header;
+        return Header(std::move(cards));
     }
 
     Header parse_header(const Path& path)
     {
-        std::ifstream file(path, std::ios::binary);
-        return parse_header(file);
+        return parse_header(FitsFile(path));
     }
-
-} // namespace FITS
 
 } // namespace ALPS
