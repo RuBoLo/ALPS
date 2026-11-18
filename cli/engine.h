@@ -37,6 +37,8 @@ public:
     void load_header();
     void load_header(const Path& path);
 
+    void load_data();
+
     [[nodiscard]] FitsFile& fits() noexcept { return *_fits; }
 
     [[nodiscard]] bool has_open_fits() const noexcept { return _fits.has_value(); }

@@ -65,10 +65,11 @@ private:
 
 class Data
 {
-    [[nodiscard]] Pixels data() const noexcept { return _data; }
-    [[nodiscard]] std::size_t width() const noexcept { return _width; }
-    [[nodiscard]] std::size_t height() const noexcept { return _height; }
-    [[nodiscard]] std::size_t channels() const noexcept { return _channels; }
+public:
+    [[nodiscard]] Pixels& data() noexcept { return _data; }
+    [[nodiscard]] std::size_t& width() noexcept { return _width; }
+    [[nodiscard]] std::size_t& height() noexcept { return _height; }
+    [[nodiscard]] std::size_t& channels() noexcept { return _channels; }
 
 private:
     Pixels _data;
@@ -110,14 +111,14 @@ public:
 
     [[nodiscard]] fitsfile* fptr() const noexcept { return _fptr; }
 
-    [[nodiscard]] const Header& header() const
+    [[nodiscard]] Header& header()
     {
         if (!_header) throw std::runtime_error("No header has been loaded");
 
         return *_header;
     }
 
-    [[nodiscard]] const Data& data() const
+    [[nodiscard]] Data& data()
     {
         if (!_data) throw std::runtime_error("No image data has been loaded");
 
@@ -127,6 +128,11 @@ public:
     void set_header(Header header)
     {
         _header = std::move(header);
+    }
+
+    void set_data(Data data)
+    {
+        _data = std::move(data);
     }
 
 private:
@@ -139,8 +145,8 @@ private:
 Header parse_header(const FitsFile& fits_file);
 Header parse_header(const Path& path);
 
-Data parse_fits(std::ifstream& file);
-Data parse_fits(const Path& path);
+Data parse_data(const FitsFile& fits_file);
+Data parse_data(const Path& path);
 
 } // namespace ALPS
 

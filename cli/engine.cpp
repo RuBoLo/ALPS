@@ -39,4 +39,14 @@ namespace ALPS
         _fits->set_header(parse_header(path));
     }
 
+    void Engine::load_data()
+    {
+        if (!has_open_fits())
+        {
+            throw std::runtime_error("No path was specified or no FITS file is currently open");
+        }
+
+        _fits->set_data(parse_data(*_fits));
+    }
+
 } // namespace ALPS

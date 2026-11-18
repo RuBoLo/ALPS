@@ -91,4 +91,50 @@ namespace ALPS
         return parse_header(FitsFile(path));
     }
 
+    Data parse_data(const FitsFile &fits_file)
+    {
+        fitsfile* fptr = fits_file.fptr();
+
+        int status = 0;
+        int dimensions = 0;
+
+        fits_get_img_dim(fptr, &dimensions, &status);
+
+        if (status) throw std::runtime_error("Failed to read FITS image dimensions");
+
+        long axes[3] = {1, 1, 1};
+
+        fits_get_img_size(fptr, 3, axes, &status);
+        
+        if (status) throw std::runtime_error("Failed to read FITS image size");
+
+        Data data;
+
+        data.width() = axes[0];
+        data.height() = axes[1];
+        data.channels() = axes[2];
+        
+        std::size_t pixel_num = axes[0] * axes[1] * axes[2];
+
+        data.data().resize(pixel_num);
+
+        long first_pixel[3] = {1, 1, 1};
+        int any_null = 0;
+
+        fits_read_pix(
+            fptr,
+            TFLOAT,
+            first_pixel,
+            static_cast<long>(pixel_num),
+            nullptr,
+            data.data().data(),
+            &any_null,
+            &status
+        );
+
+        if (status) throw std::runtime_error("Failed to read FITS image data");
+
+        return data;
+    }
+
 } // namespace ALPS

@@ -93,6 +93,13 @@ int main()
                         std::cout << "Loaded header from opened file\n";
                     }
                 }
+
+                else if (token == "data")
+                {
+                    engine.load_data();
+                    std::cout << "Loaded data from opened file\n";
+                }
+
             }
         }
 
@@ -131,6 +138,13 @@ int main()
             }
 
             std::cout << "\n\033[32mParsed FITS header in " << elapsed << " ms\033[0m\n";
+        }
+
+        // For debugging purposes
+        else if (token == "debug")
+        {
+            std::cout << "Width: " << static_cast<int>(engine.fits().data().width()) << '\n';
+            std::cout << "Height: " << static_cast<int>(engine.fits().data().height()) << '\n';
         }
 
         else if (token == "help")
