@@ -20,7 +20,6 @@
 #define ALPS_FITS_H
 
 #include <fitsio.h>
-#include <fstream>
 #include <optional>
 #include <stdexcept>
 #include <string>
